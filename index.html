@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>我的记账本</title>
+  <title>我的生活记账本</title>
+  <!-- Chart.js 用于图表 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * {
       margin: 0;
@@ -25,13 +27,27 @@
       text-align: center;
       margin: 20px 0;
       color: #007AFF;
+      font-size: 24px;
     }
-    .form {
+    .section {
       background: white;
-      padding: 20px;
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .section-title {
+      padding: 15px 20px;
+      background: #f4f5f6;
+      font-weight: 600;
+      border-bottom: 1px solid #eee;
+    }
+    .chart-container {
+      height: 300px;
+      padding: 10px;
+    }
+    .form {
+      padding: 20px;
     }
     .form-group {
       margin-bottom: 15px;
@@ -57,19 +73,42 @@
       border-radius: 8px;
       cursor: pointer;
       width: 100%;
+      margin-top: 5px;
     }
     button:hover {
       background: #0056b3;
     }
-    .records {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    .budget-bar {
+      padding: 15px 20px;
+      background: #f4f5f6;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    .budget-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .progress {
+      height: 10px;
+      background: #e0e0e0;
+      border-radius: 5px;
       overflow: hidden;
     }
+    .progress-bar {
+      height: 100%;
+      background: #007AFF;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .records {
+      max-height: 600px;
+      overflow-y: auto;
+    }
     .record-item {
-      padding: 15px 20px;
+      padding: 18px 20px;
       border-bottom: 1px solid #eee;
+      position: relative;
     }
     .record-item:last-child {
       border-bottom: none;
@@ -78,6 +117,7 @@
       display: flex;
       justify-content: space-between;
       font-weight: 600;
+      font-size: 16px;
     }
     .record-amount {
       color: #e74c3c;
@@ -87,57 +127,136 @@
       color: #666;
       margin-top: 4px;
     }
+    .record-note {
+      font-size: 14px;
+      color: #555;
+      margin-top: 6px;
+      white-space: pre-wrap;
+    }
+    .record-image {
+      margin-top: 8px;
+      max-width: 100%;
+      border-radius: 8px;
+      cursor: pointer;
+    }
     .empty {
       text-align: center;
       padding: 40px;
       color: #999;
     }
+    /* 模态框 */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>💰 我的记账本</h1>
+    <h1>📒 我的生活记账本</h1>
 
-    <!-- 记录表单 -->
-    <div class="form">
-      <div class="form-group">
-        <label>消费金额（元）</label>
-        <input type="number" id="amount" placeholder="请输入金额" step="0.01" required>
+    <!-- 预算进度条 -->
+    <div class="section">
+      <div class="section-title">本月预算</div>
+      <div class="budget-bar">
+        <div class="budget-info">
+          <span>总支出 / 预算</span>
+          <span id="total-spent">¥0.00 / ¥3000.00</span>
+        </div>
+        <div class="progress">
+          <div class="progress-bar" id="budget-progress"></div>
+        </div>
       </div>
-      <div class="form-group">
-        <label>消费类别</label>
-        <select id="category">
-          <option value="餐饮">餐饮</option>
-          <option value="交通">交通</option>
-          <option value="购物">购物</option>
-          <option value="娱乐">娱乐</option>
-          <option value="医疗">医疗</option>
-          <option value="学习">学习</option>
-          <option value="其他">其他</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>消费日期</label>
-        <input type="date" id="date" required>
-      </div>
-      <div class="form-group">
-        <label>备注（可选）</label>
-        <textarea id="note" placeholder="比如：星巴克外带" rows="2"></textarea>
-      </div>
-      <button onclick="addRecord()">记一笔</button>
     </div>
 
-    <!-- 消费记录列表 -->
-    <div class="records" id="recordsList">
-      <!-- 记录将通过 JS 动态插入 -->
+    <!-- 记录表单 -->
+    <div class="section">
+      <div class="section-title">记一笔</div>
+      <div class="form">
+        <div class="form-group">
+          <label>消费金额（元）</label>
+          <input type="number" id="amount" placeholder="请输入金额" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label>消费类别</label>
+          <select id="category">
+            <option value="餐饮">🍽️ 餐饮</option>
+            <option value="交通">🚗 交通</option>
+            <option value="购物">🛍️ 购物</option>
+            <option value="娱乐">🎮 娱乐</option>
+            <option value="医疗">🏥 医疗</option>
+            <option value="学习">📚 学习</option>
+            <option value="美妆护肤">💄 美妆护肤</option>
+            <option value="其他">📦 其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>消费日期</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+          <label>备注</label>
+          <textarea id="note" placeholder="比如：和朋友聚餐，聊得很开心" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>上传照片（可选）</label>
+          <input type="file" id="photo" accept="image/*">
+        </div>
+        <button onclick="addRecord()">记一笔</button>
+      </div>
+    </div>
+
+    <!-- 饼图：消费分布 -->
+    <div class="section">
+      <div class="section-title">钱都去哪儿了？</div>
+      <div class="chart-container">
+        <canvas id="pieChart"></canvas>
+      </div>
+    </div>
+
+    <!-- 趋势图：最近30天支出 -->
+    <div class="section">
+      <div class="section-title">最近30天消费趋势</div>
+      <div class="chart-container">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+
+    <!-- 时间线记录 -->
+    <div class="section">
+      <div class="section-title">我的消费足迹</div>
+      <div class="records" id="recordsList">
+        <!-- 记录将通过 JS 插入 -->
+      </div>
     </div>
   </div>
 
+  <!-- 图片查看模态框 -->
+  <div class="modal" id="imageModal" onclick="this.style.display='none'">
+    <img id="modalImage" src="" alt="点击关闭">
+  </div>
+
   <script>
-    // 初始化日期为今天
+    // 初始化日期
     document.getElementById('date').valueAsDate = new Date();
 
-    // 获取记录数据
+    // 图表实例
+    let pieChart, lineChart;
+
+    // 获取记录
     function getRecords() {
       return JSON.parse(localStorage.getItem('expenseRecords') || '[]');
     }
@@ -153,34 +272,154 @@
       const category = document.getElementById('category').value;
       const date = document.getElementById('date').value;
       const note = document.getElementById('note').value.trim();
+      const photoInput = document.getElementById('photo');
+      let photoData = null;
 
       if (!amount || !date) {
         alert('请填写金额和日期！');
         return;
       }
 
-      const newRecord = {
-        id: Date.now(), // 唯一ID
-        amount,
-        category,
-        date,
-        note,
-        createdAt: new Date().toISOString()
-      };
+      // 处理图片上传
+      if (photoInput.files && photoInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          photoData = e.target.result;
+          saveAndRefresh();
+        };
+        reader.readAsDataURL(photoInput.files[0]);
+        return; // 异步处理
+      }
 
-      const records = getRecords();
-      records.push(newRecord);
-      saveRecords(records);
+      function saveAndRefresh() {
+        const newRecord = {
+          id: Date.now(),
+          amount,
+          category,
+          date,
+          note,
+          photo: photoData,
+          createdAt: new Date().toISOString()
+        };
 
-      // 清空表单
-      document.getElementById('amount').value = '';
-      document.getElementById('note').value = '';
+        const records = getRecords();
+        records.push(newRecord);
+        saveRecords(records);
 
-      // 刷新列表
+        // 清空表单
+        document.getElementById('amount').value = '';
+        document.getElementById('note').value = '';
+        document.getElementById('photo').value = '';
+
+        // 刷新界面
+        renderAll();
+      }
+
+      saveAndRefresh();
+    }
+
+    // 渲染所有内容
+    function renderAll() {
+      renderBudget();
+      renderPieChart();
+      renderLineChart();
       renderRecords();
     }
 
-    // 渲染记录列表
+    // 渲染预算进度条
+    function renderBudget() {
+      const records = getRecords();
+      const total = records.reduce((sum, r) => sum + r.amount, 0);
+      const budget = 3000; // 可修改
+      const percent = Math.min((total / budget) * 100, 100);
+
+      document.getElementById('total-spent').textContent = `¥${total.toFixed(2)} / ¥${budget.toFixed(2)}`;
+      document.getElementById('budget-progress').style.width = `${percent}%`;
+    }
+
+    // 渲染饼图
+    function renderPieChart() {
+      const records = getRecords();
+      const categoryMap = {};
+      records.forEach(r => {
+        categoryMap[r.category] = (categoryMap[r.category] || 0) + r.amount;
+      });
+
+      const labels = Object.keys(categoryMap);
+      const data = Object.values(categoryMap);
+
+      const ctx = document.getElementById('pieChart').getContext('2d');
+      if (pieChart) pieChart.destroy();
+      pieChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: [
+              '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+              '#9966FF', '#FF9F40', '#C9CBCF', '#77DD77'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    // 渲染趋势图（最近30天）
+    function renderLineChart() {
+      const records = getRecords();
+      const today = new Date();
+      const dates = [];
+      const amounts = [];
+
+      // 生成最近30天的日期
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        dates.push(dateStr);
+        amounts.push(0);
+      }
+
+      // 统计每天支出
+      records.forEach(r => {
+        const day = r.date;
+        const index = dates.indexOf(day);
+        if (index >= 0) {
+          amounts[index] += r.amount;
+        }
+      });
+
+      const ctx = document.getElementById('lineChart').getContext('2d');
+      if (lineChart) lineChart.destroy();
+      lineChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: '每日支出 (元)',
+            data: amounts,
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    // 渲染记录时间线
     function renderRecords() {
       const records = getRecords().sort((a, b) => new Date(b.date) - new Date(a.date));
       const container = document.getElementById('recordsList');
@@ -196,15 +435,24 @@
             <span>${record.category}</span>
             <span class="record-amount">¥${record.amount.toFixed(2)}</span>
           </div>
-          <div class="record-meta">
-            ${record.date} ${record.note ? `| ${record.note}` : ''}
-          </div>
+          <div class="record-meta">${record.date}</div>
+          ${record.note ? `<div class="record-note">📝 ${record.note}</div>` : ''}
+          ${record.photo ? `<img src="${record.photo}" class="record-image" onclick="showImage(event, '${record.photo}')" />` : ''}
         </div>
       `).join('');
     }
 
-    // 页面加载时渲染记录
-    document.addEventListener('DOMContentLoaded', renderRecords);
+    // 显示大图
+    function showImage(e, src) {
+      e.stopPropagation();
+      document.getElementById('modalImage').src = src;
+      document.getElementById('imageModal').style.display = 'flex';
+    }
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+    });
   </script>
 </body>
 </html>
