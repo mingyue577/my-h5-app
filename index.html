@@ -1,42 +1,210 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>我的H5应用</title>
+  <title>我的记账本</title>
   <style>
-    body {
-      font-family: "Helvetica Neue", sans-serif;
+    * {
       margin: 0;
-      padding: 20px;
-      background: #f4f5f6;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      background: #f7f8fa;
       color: #333;
+      line-height: 1.6;
     }
     .container {
-      max-width: 480px;
+      max-width: 600px;
       margin: 0 auto;
-      text-align: center;
+      padding: 20px;
     }
-    .btn {
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+      color: #007AFF;
+    }
+    .form {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
       display: block;
-      width: 200px;
-      margin: 30px auto;
-      padding: 15px;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
       background: #007AFF;
       color: white;
-      border-radius: 12px;
-      text-decoration: none;
+      border: none;
+      padding: 12px 20px;
       font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .records {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .record-item {
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .record-item:last-child {
+      border-bottom: none;
+    }
+    .record-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+    }
+    .record-amount {
+      color: #e74c3c;
+    }
+    .record-meta {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .empty {
+      text-align: center;
+      padding: 40px;
+      color: #999;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>欢迎使用 H5 应用</h1>
-    <p>这是一个适配手机的网页应用</p>
-    <a href="tel:13800138000" class="btn">联系客服</a>
-    <button onclick="alert('你好，H5!')">点击测试</button>
+    <h1>💰 我的记账本</h1>
+
+    <!-- 记录表单 -->
+    <div class="form">
+      <div class="form-group">
+        <label>消费金额（元）</label>
+        <input type="number" id="amount" placeholder="请输入金额" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label>消费类别</label>
+        <select id="category">
+          <option value="餐饮">餐饮</option>
+          <option value="交通">交通</option>
+          <option value="购物">购物</option>
+          <option value="娱乐">娱乐</option>
+          <option value="医疗">医疗</option>
+          <option value="学习">学习</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>消费日期</label>
+        <input type="date" id="date" required>
+      </div>
+      <div class="form-group">
+        <label>备注（可选）</label>
+        <textarea id="note" placeholder="比如：星巴克外带" rows="2"></textarea>
+      </div>
+      <button onclick="addRecord()">记一笔</button>
+    </div>
+
+    <!-- 消费记录列表 -->
+    <div class="records" id="recordsList">
+      <!-- 记录将通过 JS 动态插入 -->
+    </div>
   </div>
+
+  <script>
+    // 初始化日期为今天
+    document.getElementById('date').valueAsDate = new Date();
+
+    // 获取记录数据
+    function getRecords() {
+      return JSON.parse(localStorage.getItem('expenseRecords') || '[]');
+    }
+
+    // 保存记录
+    function saveRecords(records) {
+      localStorage.setItem('expenseRecords', JSON.stringify(records));
+    }
+
+    // 添加新记录
+    function addRecord() {
+      const amount = parseFloat(document.getElementById('amount').value);
+      const category = document.getElementById('category').value;
+      const date = document.getElementById('date').value;
+      const note = document.getElementById('note').value.trim();
+
+      if (!amount || !date) {
+        alert('请填写金额和日期！');
+        return;
+      }
+
+      const newRecord = {
+        id: Date.now(), // 唯一ID
+        amount,
+        category,
+        date,
+        note,
+        createdAt: new Date().toISOString()
+      };
+
+      const records = getRecords();
+      records.push(newRecord);
+      saveRecords(records);
+
+      // 清空表单
+      document.getElementById('amount').value = '';
+      document.getElementById('note').value = '';
+
+      // 刷新列表
+      renderRecords();
+    }
+
+    // 渲染记录列表
+    function renderRecords() {
+      const records = getRecords().sort((a, b) => new Date(b.date) - new Date(a.date));
+      const container = document.getElementById('recordsList');
+
+      if (records.length === 0) {
+        container.innerHTML = '<div class="empty">还没有消费记录哦～</div>';
+        return;
+      }
+
+      container.innerHTML = records.map(record => `
+        <div class="record-item">
+          <div class="record-header">
+            <span>${record.category}</span>
+            <span class="record-amount">¥${record.amount.toFixed(2)}</span>
+          </div>
+          <div class="record-meta">
+            ${record.date} ${record.note ? `| ${record.note}` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 页面加载时渲染记录
+    document.addEventListener('DOMContentLoaded', renderRecords);
+  </script>
 </body>
 </html>
