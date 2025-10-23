@@ -4,111 +4,171 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>我的生活记账本</title>
-  <!-- Chart.js 用于图表 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    :root {
+      --primary: #4361ee;
+      --primary-light: #4cc9f0;
+      --danger: #e63946;
+      --success: #4ade8f;
+      --gray: #8391a2;
+      --light: #f7f8fa;
+      --card-bg: #ffffff;
+    }
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      background: #f7f8fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+      background: linear-gradient(135deg, #f8f9ff 0%, #eef1ff 100%);
       color: #333;
       line-height: 1.6;
+      min-height: 100vh;
+      padding-bottom: 40px;
     }
     .container {
-      max-width: 600px;
+      max-width: 640px;
       margin: 0 auto;
       padding: 20px;
     }
     h1 {
       text-align: center;
-      margin: 20px 0;
-      color: #007AFF;
-      font-size: 24px;
+      margin: 24px 0;
+      color: var(--primary);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
     }
     .section {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      margin-bottom: 24px;
       overflow: hidden;
+      backdrop-filter: blur(8px);
     }
     .section-title {
-      padding: 15px 20px;
-      background: #f4f5f6;
+      padding: 18px 24px;
+      background: rgba(67, 97, 238, 0.05);
       font-weight: 600;
-      border-bottom: 1px solid #eee;
+      color: var(--primary);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
     }
     .chart-container {
-      height: 300px;
-      padding: 10px;
+      height: 320px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .form {
-      padding: 20px;
+      padding: 24px;
     }
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
     label {
       display: block;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
       font-weight: 500;
+      color: #444;
     }
     input, select, textarea {
       width: 100%;
-      padding: 10px;
+      padding: 12px 14px;
       border: 1px solid #ddd;
-      border-radius: 8px;
+      border-radius: 12px;
       font-size: 16px;
+      transition: all 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
     }
     button {
-      background: #007AFF;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
       color: white;
       border: none;
-      padding: 12px 20px;
+      padding: 14px 20px;
       font-size: 16px;
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
       width: 100%;
-      margin-top: 5px;
+      font-weight: 600;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
     }
     button:hover {
-      background: #0056b3;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
     }
+    button:active {
+      transform: translateY(0);
+    }
+
+    /* 情绪选择 */
+    .mood-selector {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .mood-btn {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 20px;
+      transition: all 0.2s;
+    }
+    .mood-btn.selected {
+      border-color: var(--primary);
+      background: rgba(67, 97, 238, 0.1);
+      transform: scale(1.05);
+    }
+
+    /* 预算条 */
     .budget-bar {
-      padding: 15px 20px;
-      background: #f4f5f6;
-      border-radius: 8px;
-      margin-bottom: 15px;
+      padding: 20px;
     }
     .budget-info {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 5px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .budget-amounts {
+      color: var(--primary);
     }
     .progress {
-      height: 10px;
+      height: 12px;
       background: #e0e0e0;
-      border-radius: 5px;
+      border-radius: 6px;
       overflow: hidden;
     }
     .progress-bar {
       height: 100%;
-      background: #007AFF;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
       width: 0%;
-      transition: width 0.3s ease;
+      transition: width 0.4s cubic-bezier(0.65, 0, 0.35, 1);
     }
+
+    /* 记录卡片 */
     .records {
       max-height: 600px;
       overflow-y: auto;
     }
     .record-item {
-      padding: 18px 20px;
-      border-bottom: 1px solid #eee;
-      position: relative;
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      transition: background 0.2s;
+    }
+    .record-item:hover {
+      background: rgba(67, 97, 238, 0.03);
     }
     .record-item:last-child {
       border-bottom: none;
@@ -117,33 +177,43 @@
       display: flex;
       justify-content: space-between;
       font-weight: 600;
-      font-size: 16px;
+      font-size: 17px;
+      margin-bottom: 4px;
     }
     .record-amount {
-      color: #e74c3c;
+      color: var(--danger);
     }
     .record-meta {
       font-size: 14px;
-      color: #666;
-      margin-top: 4px;
+      color: var(--gray);
+      margin-bottom: 6px;
     }
     .record-note {
       font-size: 14px;
       color: #555;
-      margin-top: 6px;
-      white-space: pre-wrap;
+      margin-bottom: 8px;
+      padding: 8px 12px;
+      background: #f8f9ff;
+      border-radius: 8px;
+      border-left: 3px solid var(--primary);
+    }
+    .record-mood {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
     }
     .record-image {
-      margin-top: 8px;
+      margin-top: 10px;
       max-width: 100%;
-      border-radius: 8px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       cursor: pointer;
+      transition: transform 0.2s;
     }
-    .empty {
-      text-align: center;
-      padding: 40px;
-      color: #999;
+    .record-image:hover {
+      transform: scale(1.02);
     }
+
     /* 模态框 */
     .modal {
       display: none;
@@ -152,29 +222,53 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.9);
       justify-content: center;
       align-items: center;
       z-index: 1000;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     .modal img {
       max-width: 90%;
       max-height: 90%;
-      border-radius: 8px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      animation: zoomIn 0.3s;
+    }
+    @keyframes zoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* 空状态 */
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--gray);
+      font-size: 15px;
+    }
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.6;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📒 我的生活记账本</h1>
+    <h1>✨ 我的生活记账本</h1>
 
-    <!-- 预算进度条 -->
+    <!-- 预算进度 -->
     <div class="section">
-      <div class="section-title">本月预算</div>
+      <div class="section-title">财务健康度</div>
       <div class="budget-bar">
         <div class="budget-info">
-          <span>总支出 / 预算</span>
-          <span id="total-spent">¥0.00 / ¥3000.00</span>
+          <span>本月支出</span>
+          <span class="budget-amounts" id="total-spent">¥0.00 / ¥3000.00</span>
         </div>
         <div class="progress">
           <div class="progress-bar" id="budget-progress"></div>
@@ -182,13 +276,13 @@
       </div>
     </div>
 
-    <!-- 记录表单 -->
+    <!-- 记账表单 -->
     <div class="section">
-      <div class="section-title">记一笔</div>
+      <div class="section-title">📝 记一笔</div>
       <div class="form">
         <div class="form-group">
           <label>消费金额（元）</label>
-          <input type="number" id="amount" placeholder="请输入金额" step="0.01" required>
+          <input type="number" id="amount" placeholder="0.00" step="0.01" required>
         </div>
         <div class="form-group">
           <label>消费类别</label>
@@ -208,65 +302,83 @@
           <input type="date" id="date" required>
         </div>
         <div class="form-group">
-          <label>备注</label>
-          <textarea id="note" placeholder="比如：和朋友聚餐，聊得很开心" rows="2"></textarea>
+          <label>心情如何？</label>
+          <div class="mood-selector">
+            <div class="mood-btn" data-mood="happy" onclick="selectMood(this)">😊 开心</div>
+            <div class="mood-btn" data-mood="neutral" onclick="selectMood(this)">😌 平静</div>
+            <div class="mood-btn" data-mood="regret" onclick="selectMood(this)">😩 后悔</div>
+            <div class="mood-btn" data-mood="worth" onclick="selectMood(this)">💪 值得</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>备注（小故事）</label>
+          <textarea id="note" placeholder="比如：和闺蜜聊了一下午，治愈了～" rows="2"></textarea>
         </div>
         <div class="form-group">
           <label>上传照片（可选）</label>
           <input type="file" id="photo" accept="image/*">
         </div>
-        <button onclick="addRecord()">记一笔</button>
+        <button onclick="addRecord()">记下来</button>
       </div>
     </div>
 
-    <!-- 饼图：消费分布 -->
+    <!-- 饼图 -->
     <div class="section">
-      <div class="section-title">钱都去哪儿了？</div>
+      <div class="section-title">💰 钱都去哪儿了？</div>
       <div class="chart-container">
         <canvas id="pieChart"></canvas>
       </div>
     </div>
 
-    <!-- 趋势图：最近30天支出 -->
+    <!-- 趋势图 -->
     <div class="section">
-      <div class="section-title">最近30天消费趋势</div>
+      <div class="section-title">📈 消费趋势（最近30天）</div>
       <div class="chart-container">
         <canvas id="lineChart"></canvas>
       </div>
     </div>
 
-    <!-- 时间线记录 -->
+    <!-- 时间线 -->
     <div class="section">
-      <div class="section-title">我的消费足迹</div>
+      <div class="section-title">📅 我的消费足迹</div>
       <div class="records" id="recordsList">
-        <!-- 记录将通过 JS 插入 -->
+        <div class="empty">
+          <div class="empty-icon">📒</div>
+          还没有记录哦，快去记一笔吧！
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 图片查看模态框 -->
+  <!-- 图片查看器 -->
   <div class="modal" id="imageModal" onclick="this.style.display='none'">
     <img id="modalImage" src="" alt="点击关闭">
   </div>
 
   <script>
+    // 当前选中的心情
+    let selectedMood = null;
+
+    function selectMood(el) {
+      document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedMood = el.getAttribute('data-mood');
+    }
+
     // 初始化日期
     document.getElementById('date').valueAsDate = new Date();
 
     // 图表实例
     let pieChart, lineChart;
 
-    // 获取记录
     function getRecords() {
       return JSON.parse(localStorage.getItem('expenseRecords') || '[]');
     }
 
-    // 保存记录
     function saveRecords(records) {
       localStorage.setItem('expenseRecords', JSON.stringify(records));
     }
 
-    // 添加新记录
     function addRecord() {
       const amount = parseFloat(document.getElementById('amount').value);
       const category = document.getElementById('category').value;
@@ -280,7 +392,6 @@
         return;
       }
 
-      // 处理图片上传
       if (photoInput.files && photoInput.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -288,7 +399,7 @@
           saveAndRefresh();
         };
         reader.readAsDataURL(photoInput.files[0]);
-        return; // 异步处理
+        return;
       }
 
       function saveAndRefresh() {
@@ -298,6 +409,7 @@
           category,
           date,
           note,
+          mood: selectedMood,
           photo: photoData,
           createdAt: new Date().toISOString()
         };
@@ -306,19 +418,19 @@
         records.push(newRecord);
         saveRecords(records);
 
-        // 清空表单
+        // 重置
         document.getElementById('amount').value = '';
         document.getElementById('note').value = '';
         document.getElementById('photo').value = '';
+        document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('selected'));
+        selectedMood = null;
 
-        // 刷新界面
         renderAll();
       }
 
       saveAndRefresh();
     }
 
-    // 渲染所有内容
     function renderAll() {
       renderBudget();
       renderPieChart();
@@ -326,18 +438,16 @@
       renderRecords();
     }
 
-    // 渲染预算进度条
     function renderBudget() {
       const records = getRecords();
       const total = records.reduce((sum, r) => sum + r.amount, 0);
-      const budget = 3000; // 可修改
+      const budget = 3000;
       const percent = Math.min((total / budget) * 100, 100);
 
       document.getElementById('total-spent').textContent = `¥${total.toFixed(2)} / ¥${budget.toFixed(2)}`;
       document.getElementById('budget-progress').style.width = `${percent}%`;
     }
 
-    // 渲染饼图
     function renderPieChart() {
       const records = getRecords();
       const categoryMap = {};
@@ -351,7 +461,7 @@
       const ctx = document.getElementById('pieChart').getContext('2d');
       if (pieChart) pieChart.destroy();
       pieChart = new Chart(ctx, {
-        type: 'pie',
+        type: 'doughnut',
         data: {
           labels: labels,
           datasets: [{
@@ -359,38 +469,39 @@
             backgroundColor: [
               '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
               '#9966FF', '#FF9F40', '#C9CBCF', '#77DD77'
-            ]
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
           }]
         },
         options: {
           responsive: true,
           plugins: {
-            legend: { position: 'bottom' }
-          }
+            legend: { position: 'bottom' },
+            tooltip: { backgroundColor: 'rgba(0,0,0,0.8)' }
+          },
+          cutout: '65%'
         }
       });
     }
 
-    // 渲染趋势图（最近30天）
     function renderLineChart() {
       const records = getRecords();
       const today = new Date();
       const dates = [];
       const amounts = [];
 
-      // 生成最近30天的日期
       for (let i = 29; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        dates.push(dateStr);
+        dates.push(dateStr.slice(5)); // 只显示月-日
         amounts.push(0);
       }
 
-      // 统计每天支出
       records.forEach(r => {
         const day = r.date;
-        const index = dates.indexOf(day);
+        const index = dates.indexOf(day.slice(5));
         if (index >= 0) {
           amounts[index] += r.amount;
         }
@@ -399,35 +510,51 @@
       const ctx = document.getElementById('lineChart').getContext('2d');
       if (lineChart) lineChart.destroy();
       lineChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
           labels: dates,
           datasets: [{
-            label: '每日支出 (元)',
+            label: '每日支出',
             data: amounts,
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
+            borderColor: '#4361ee',
+            backgroundColor: 'rgba(67, 97, 238, 0.2)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#4361ee'
           }]
         },
         options: {
           responsive: true,
           scales: {
             y: { beginAtZero: true }
+          },
+          plugins: {
+            legend: { display: false }
           }
         }
       });
     }
 
-    // 渲染记录时间线
     function renderRecords() {
       const records = getRecords().sort((a, b) => new Date(b.date) - new Date(a.date));
       const container = document.getElementById('recordsList');
 
       if (records.length === 0) {
-        container.innerHTML = '<div class="empty">还没有消费记录哦～</div>';
+        container.innerHTML = `
+          <div class="empty">
+            <div class="empty-icon">📒</div>
+            还没有记录哦，快去记一笔吧！
+          </div>
+        `;
         return;
       }
+
+      const moodLabels = {
+        happy: '😊 开心',
+        neutral: '😌 平静',
+        regret: '😩 后悔',
+        worth: '💪 值得'
+      };
 
       container.innerHTML = records.map(record => `
         <div class="record-item">
@@ -436,20 +563,19 @@
             <span class="record-amount">¥${record.amount.toFixed(2)}</span>
           </div>
           <div class="record-meta">${record.date}</div>
-          ${record.note ? `<div class="record-note">📝 ${record.note}</div>` : ''}
+          ${record.note ? `<div class="record-note">${record.note}</div>` : ''}
+          ${record.mood ? `<div class="record-mood">${moodLabels[record.mood]}</div>` : ''}
           ${record.photo ? `<img src="${record.photo}" class="record-image" onclick="showImage(event, '${record.photo}')" />` : ''}
         </div>
       `).join('');
     }
 
-    // 显示大图
     function showImage(e, src) {
       e.stopPropagation();
       document.getElementById('modalImage').src = src;
       document.getElementById('imageModal').style.display = 'flex';
     }
 
-    // 页面加载时初始化
     document.addEventListener('DOMContentLoaded', () => {
       renderAll();
     });
